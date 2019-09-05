@@ -177,6 +177,43 @@ df3.group_day %>%
   geom_density() + 
   facet_wrap(~start_date_fiscal_year_long)
 
+df2.modified %>% 
+  ggplot(aes(x = start_to_left_ed_elapsed_time_minutes)) + 
+  geom_density() + 
+  facet_wrap(~start_date_fiscal_year_long)
+
+#' Clearly those are 2 diff distributions, smooshed together. Can we separate
+#' them by CTAS?
+
+df2.modified %>% 
+  ggplot(aes(x = start_to_left_ed_elapsed_time_minutes)) + 
+  geom_density() + 
+  facet_wrap(~ first_triage_acuity_cd) 
+
+
+df2.modified %>% 
+  ggplot(aes(x = start_to_left_ed_elapsed_time_minutes)) + 
+  geom_density() + 
+  facet_wrap(~is_admitted) + 
+  labs(title = "2 completely different ED LOS distributions, for non-admits vs admits")
+
+df2.modified %>% 
+  ggplot(aes(x = admit_to_left_ed_elapsed_time_minutes)) + 
+  geom_density() + 
+  facet_wrap(~ first_triage_acuity_cd) + 
+  labs(title = "Why is [admit_to_left_ed_elapsed_time_minutes] always NA?")
+
+
+df2.modified %>% 
+  ggplot(aes(x = age_at_start_date)) + 
+  geom_density() + 
+  facet_wrap(~ first_triage_acuity_cd)
+
+
+df2.modified %>% 
+  ggplot(aes(x = start_to_first_seen_by_care_provider_elapsed_time_minutes)) + 
+  geom_density() + 
+  facet_wrap(~ first_triage_acuity_cd)
 
 # boxplots ------
 df3.group_day %>% 
@@ -267,7 +304,8 @@ df2.modified %>%
   select(-c(data, model)) %>%
   datatable(extensions = 'Buttons',
             options = list(dom = 'Bfrtip', 
-                           buttons = c('excel', "csv")))
+                           buttons = c('excel', "csv"))) %>% 
+  formatRound(3:4, 1)
   
 #' EDLOS varies by CTAS, but **does not** vary by age. 
 #' 
