@@ -162,17 +162,37 @@ df3.group_day %>%
 
 
 # anomaly detection: 
-# df3.group_day %>% 
-#   select(start_date, 
-#          daily_visits) %>% 
-#   mutate(daily_visits = as.numeric(daily_visits)) %>% 
-#   as_tibble() %>% 
-#   time_decompose(daily_visits)
-# 
-# df <- data.frame(date = ymd(c("2019-01-01", "2019-01-02")), 
-#                  value = c(240, 243))
-# df %>% as_tibble() %>% time_decompose(value)
-# 
+df6.anomalize <- 
+  df3.group_day %>%
+  select(start_date,
+         daily_visits) %>%
+  rename(date = start_date) %>%  # 
+  as_tibble() %>%
+  
+  # {anomalize}
+  time_decompose(daily_visits, 
+                 method = "stl", 
+                 frequency = "7 days",  # try "1 month" or "1 week" 
+                 trend     = "auto") %>% 
+  anomalize(remainder,
+            method = "gesd", 
+            alpha = 5) %>% 
+  time_recompose() 
+  
+df6.anomalize %>% 
+  plot_anomaly_decomposition()
+ 
+df6.anomalize %>% 
+  plot_anomalies() + 
+  scale_y_continuous(limits = c(100, 200))
+
+df6.anomalize %>% 
+  # tail(30) %>% 
+  datatable(extensions = 'Buttons',
+            options = list(dom = 'Bfrtip', 
+                           buttons = c('excel', "csv"))) %>% 
+  formatRound(3:10, 2)
+ 
 # 
 #   anomalize(daily_visits, 
 #             method = "iqr") %>% 
