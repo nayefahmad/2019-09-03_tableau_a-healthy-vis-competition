@@ -23,6 +23,9 @@ library(lubridate)
 library(feasts)
 library(ggbeeswarm)
 library(anomalize)
+# library(tree)
+library(rpart)
+library(caret)
 
 #+ rest 
 #' ## Data prep 
@@ -86,7 +89,8 @@ df3.group_day <-
            start_date_fiscal_year_long, 
            start_date_fiscal_period) %>% 
   summarize(daily_visits = n(), 
-            daily_admits = sum(is_admitted)) %>% 
+            daily_admits = sum(is_admitted), 
+            lwbs = sum(is_left_without_being_seen)) %>% 
   ungroup
   
 
@@ -112,8 +116,12 @@ df4.group_day_hr <-
 
 df4.group_day_hr
 
+
+
+#***********************************************************
 #+ plots
 #' ## Exploratory plots 
+#' ### Time series 
 # time series: -----
 df3.group_day %>% 
   ggplot(aes(x = start_date, 
@@ -124,6 +132,12 @@ df3.group_day %>%
 df3.group_day %>% 
   ggplot(aes(x = start_date, 
              y = daily_admits)) + 
+  geom_line() + 
+  geom_smooth()
+
+df3.group_day %>% 
+  ggplot(aes(x = start_date, 
+             y = lwbs)) + 
   geom_line() + 
   geom_smooth()
 
@@ -164,7 +178,7 @@ df3.group_day %>%
 #             method = "iqr") %>% 
 #   autoplot()
 
-
+#' ### Densities
 # densities: ----
 df3.group_day %>% 
   ggplot(aes(x = daily_visits)) + 
@@ -176,6 +190,12 @@ df3.group_day %>%
   ggplot(aes(x = daily_admits)) + 
   geom_density() + 
   facet_wrap(~start_date_fiscal_year_long)
+
+df4.group_day_hr %>% 
+  ggplot(aes(x = hourly_visits)) + 
+  geom_density() + 
+  facet_wrap(~start_date_fiscal_year_long)
+
 
 df2.modified %>% 
   ggplot(aes(x = start_to_left_ed_elapsed_time_minutes)) + 
@@ -215,6 +235,8 @@ df2.modified %>%
   geom_density() + 
   facet_wrap(~ first_triage_acuity_cd)
 
+
+#' ### Boxplots
 # boxplots ------
 df3.group_day %>% 
   ggplot(aes(x = weekday, 
@@ -256,7 +278,7 @@ df4.group_day_hr %>%
 
 
 
-
+#' ### CTAS
 # ctas -----
 df2.modified %>% 
   group_by(first_triage_acuity_cd) %>% 
@@ -311,6 +333,67 @@ df2.modified %>%
 #' 
 
 
+
+# chief complaint: --------
+df5.complaint <- 
+  df2.modified %>% 
+  group_by(chief_complaint_desc) %>% 
+  summarize(count = n(), 
+            avg_ed_los = mean(start_to_left_ed_elapsed_time_minutes), 
+            prop_admit = sum(is_admitted)/n()) 
+
+
+df5.complaint %>%   
+  arrange(desc(prop_admit)) %>% 
+  head(20) %>% 
+  kable() %>% 
+  kable_styling(bootstrap_options = c("striped",
+                "condensed", 
+                "responsive"))
+              
+df5.complaint %>% 
+  ggplot(aes(x = avg_ed_los, 
+             y = prop_admit)) + 
+  geom_point(alpha = .2) + 
+  labs(title = "Chief complaints with higher EDLOS have higher prob of admission")
+
+
+#+ rpart, eval = FALSE
+# model: predict EDLOS: ----------
+set.seed(121)
+v3.train_index <- createDataPartition(df2.modified$start_to_left_ed_elapsed_time_minutes, 
+                                      p = 0.8, 
+                                      list = FALSE)
+
+tree_fit <- train(start_to_left_ed_elapsed_time_minutes ~ age_at_start_date 
+                    + gender_desc_at_start_date 
+                    + as.factor(is_admitted)
+                    + as.factor(is_left_without_being_seen)  
+                    + chief_complaint_desc,
+                  data = df2.modified[v3.train_index, ], 
+                  method = "rpart2")
+
+# tree_fit
+# summary(tree_fit)
+
+str(tree_fit)
+plot(tree_fit$finalModel)
+text(tree_fit$finalModel)
+
+
+
+predict(tree_fit, data = df2.modified[-v3.train_index, ])
+
+
+#+ 
+
+
+
+
+
+
+
+#**********************************************************
 
 #+ out
 # outputs: 
