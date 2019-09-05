@@ -183,7 +183,7 @@ df3.group_day %>%
   ggplot(aes(x = weekday, 
              y = daily_visits)) + 
   geom_boxplot() + 
-  geom_beeswarm(alpha = .2) + 
+  geom_beeswarm(aes(text = start_date), alpha = .2) + 
   facet_wrap(~start_date_fiscal_year_long) + 
   theme(axis.text.x = element_text(angle = 45, 
                                    hjust = 1))
@@ -221,7 +221,29 @@ df4.group_day_hr %>%
 
 
 # ctas -----
+df2.modified %>% 
+  group_by(first_triage_acuity_cd) %>% 
+  filter(!first_triage_acuity_cd %in% c("-4", "-1")) %>% 
+  summarize(count = n(), 
+            avg_ed_los = mean(start_to_left_ed_elapsed_time_minutes), 
+            sd_ed_los = sd(start_to_left_ed_elapsed_time_minutes)) %>% 
+  ggplot(aes(x = as.factor(first_triage_acuity_cd), 
+             y = avg_ed_los)) +
+  geom_col(aes(fill = count)) + 
+  geom_text(aes(label = round(count, -2)), 
+            vjust = -0.5) + 
+  labs(title = "counts rounded to nearest 100")
 
+
+df2.modified %>% 
+  count(start_date, 
+        start_date_fiscal_year_long, 
+        first_triage_acuity_cd) %>% 
+  ggplot(aes(x = first_triage_acuity_cd, 
+             y = n)) + 
+  geom_boxplot() + 
+  labs(title = "num visits per day, by CTAS") + 
+  facet_wrap(~start_date_fiscal_year_long)
 
 
 
@@ -247,6 +269,8 @@ df2.modified %>%
             options = list(dom = 'Bfrtip', 
                            buttons = c('excel', "csv")))
   
+#' EDLOS varies by CTAS, but **does not** vary by age. 
+#' 
 
 
 
