@@ -220,6 +220,34 @@ df4.group_day_hr %>%
 
 
 
+# ctas -----
+
+
+
+
+# age -----
+df2.modified %>% 
+  group_by(first_triage_acuity_cd) %>% 
+  nest %>% 
+  mutate(model = map(data, 
+                     function(df){
+                       return(lm(start_to_left_ed_elapsed_time_minutes ~ age_at_start_date, 
+                                 data = df))
+                     })) %>% 
+  mutate(formula = "start_to_left_ed ~ age", 
+         intercept_minutes = map_dbl(model, 
+                         function(m){m$coef[1]}), 
+         slope_per_year_age = map_dbl(model,
+                         function(m){m$coef[2]}), 
+         count = map_dbl(data, nrow)) %>% 
+  arrange(first_triage_acuity_cd) %>% 
+  
+  select(-c(data, model)) %>%
+  datatable(extensions = 'Buttons',
+            options = list(dom = 'Bfrtip', 
+                           buttons = c('excel', "csv")))
+  
+
 
 
 #+ out
